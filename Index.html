@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DigiStore - Next Gen Tech</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        ::selection {
+            background-color: #FEF08A; /* yellow-200 */
+        }
+        /* Fade In Animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+        /* Custom Scrollbar for nicer look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #999;
+        }
+    </style>
+</head>
+<body class="bg-white text-gray-900 flex flex-col min-h-screen">
+
+    <!-- Header Container -->
+    <div id="header-root"></div>
+
+    <!-- Main Content Container -->
+    <main id="main-root" class="flex-grow"></main>
+
+    <!-- Footer Container -->
+    <div id="footer-root"></div>
+
+    <script>
+        // --- MOCK DATA ---
+        const PRODUCTS = [
+            {
+                id: 1,
+                name: "Sony WH-1000XM5",
+                category: "Audio",
+                price: 26990,
+                rating: 4.8,
+                image: "https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?auto=format&fit=crop&q=80&w=800",
+                description: "Industry-leading noise cancellation, exceptional sound quality, and crystal-clear hands-free calling. The ultimate listening experience."
+            },
+            {
+                id: 2,
+                name: "Apple Watch Ultra",
+                category: "Wearables",
+                price: 89900,
+                rating: 4.9,
+                image: "https://images.unsplash.com/photo-1664478546384-d57ffe74a797?auto=format&fit=crop&q=80&w=800",
+                description: "The most rugged and capable Apple Watch ever, designed for exploration, adventure, and endurance."
+            },
+            {
+                id: 3,
+                name: "Fujifilm X-T5",
+                category: "Cameras",
+                price: 169999,
+                rating: 4.7,
+                image: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&q=80&w=800",
+                description: "A photography-first camera with a 40MP sensor, classic dial controls, and advanced image stabilization."
+            },
+            {
+                id: 4,
+                name: "iPhone 15 Pro",
+                category: "Smartphones",
+                price: 134900,
+                rating: 4.8,
+                image: "https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&q=80&w=800",
+                description: "Forged in titanium. Featuring the groundbreaking A17 Pro chip, a customizable Action button, and a powerful camera system."
+            },
+            {
+                id: 5,
+                name: "MacBook Air M2",
+                category: "Laptops",
+                price: 99900,
+                rating: 4.9,
+                image: "https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?auto=format&fit=crop&q=80&w=800",
+                description: "Strikingly thin and fast. Engineered around the next-generation M2 chip for incredible performance and battery life."
+            },
+            {
+                id: 6,
+                name: "Samsung Galaxy S24",
+                category: "Smartphones",
+                price: 79999,
+                rating: 4.6,
+                image: "https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?auto=format&fit=crop&q=80&w=800",
+                description: "Epic shots with Nightography. The fastest chip ever on Galaxy. A battery that lasts your day and night."
+            },
+            {
+                id: 7,
+                name: "Marshall Stanmore III",
+                category: "Audio",
+                price: 41999,
+                rating: 4.7,
+                image: "https://images.unsplash.com/photo-1621259013995-1f6ebba68474?auto=format&fit=crop&q=80&w=800",
+                description: "Legendary design. Takes the middle and top shelf of the home line-up, creating a wide soundstage."
+            },
+            {
+                id: 8,
+                name: "DJI Mini 3 Pro",
+                category: "Drones",
+                price: 84990,
+                rating: 4.8,
+                image: "https://images.unsplash.com/photo-1579829366248-204fe8413f31?auto=format&fit=crop&q=80&w=800",
+                description: "Mega-capable, mini-sized. Less than 249g. 4K/60fps Video. True Vertical Shooting."
+            }
+        ];
+
+        // --- STATE MANAGEMENT ---
+        const state = {
+            currentPage: 'home', // home, search, details, payment, orders
+            searchQuery: '',
+            selectedProduct: null,
+            cart: [],
+            paymentMethod: '',
+            isMobileMenuOpen: false,
+            lastOrder: null
+        };
+
+        // --- GLOBAL HELPERS & CONTROLLERS ---
+        
+        const formatPrice = (price) => {
+            return price.toLocaleString('en-IN');
+        };
+
+        const render = () => {
+            document.getElementById('header-root').innerHTML = Header();
+            document.getElementById('footer-root').innerHTML = state.currentPage !== 'orders' && state.currentPage !== 'payment' ? Footer() : '';
+            
+            const mainRoot = document.getElementById('main-root');
+            switch (state.currentPage) {
+                case 'home': mainRoot.innerHTML = HomePage(); break;
+                case 'search': mainRoot.innerHTML = SearchPage(); break;
+                case 'details': mainRoot.innerHTML = ProductDetailsPage(); break;
+                case 'payment': mainRoot.innerHTML = PaymentPage(); break;
+                case 'orders': mainRoot.innerHTML = OrdersPage(); break;
+                default: mainRoot.innerHTML = HomePage();
+            }
+
+            // Re-initialize icons after DOM update
+            lucide.createIcons();
+            
+            // Attach event listeners for search forms manually since they are re-rendered
+            const searchInputs = document.querySelectorAll('.search-input');
+            searchInputs.forEach(input => {
+                input.value = state.searchQuery;
+                input.addEventListener('input', (e) => {
+                    state.searchQuery = e.target.value;
+                });
+            });
+        };
+
+        // --- ACTIONS ---
+
+        window.app = {
+            goHome: () => {
+                state.currentPage = 'home';
+                state.searchQuery = '';
+                window.scrollTo(0, 0);
+                render();
+            },
+            handleSearch: (e) => {
+                e.preventDefault();
+                if (state.searchQuery.trim()) {
+                    state.currentPage = 'search';
+                    state.isMobileMenuOpen = false;
+                    window.scrollTo(0, 0);
+                    render();
+                }
+            },
+            toggleMobileMenu: () => {
+                state.isMobileMenuOpen = !state.isMobileMenuOpen;
+                render();
+            },
+            viewProduct: (id) => {
+                state.selectedProduct = PRODUCTS.find(p => p.id === id);
+                state.currentPage = 'details';
+                window.scrollTo(0, 0);
+                render();
+            },
+            addToCart: (id) => {
+                const product = PRODUCTS.find(p => p.id === id);
+                state.cart.push(product);
+                alert(`${product.name} added to cart!`);
+                render();
+            },
+            proceedToBuy: (id) => {
+                if(id) {
+                    state.selectedProduct = PRODUCTS.find(p => p.id === id);
+                }
+                state.currentPage = 'payment';
+                state.paymentMethod = ''; // Reset payment on new checkout
+                window.scrollTo(0, 0);
+                render();
+            },
+            selectPaymentMethod: (method) => {
+                state.paymentMethod = method;
+                render();
+            },
+            confirmOrder: () => {
+                if (!state.paymentMethod) {
+                    alert("Please select a payment method.");
+                    return;
+                }
+                state.lastOrder = {
+                    product: state.selectedProduct,
+                    method: state.paymentMethod,
+                    date: new Date().toLocaleDateString(),
+                    orderId: 'ORD-' + Math.floor(Math.random() * 100000)
+                };
+                state.cart = [];
+                state.currentPage = 'orders';
+                window.scrollTo(0, 0);
+                render();
+            },
+            goBack: () => {
+                state.currentPage = 'details'; // Or back to where they came from logic
+                render();
+            },
+            scrollToFeatured: () => {
+                const el = document.getElementById('featured');
+                if(el) el.scrollIntoView({behavior: 'smooth'});
+            }
+        };
+
+        // --- COMPONENT TEMPLATES ---
+
+        const Header = () => `
+            <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-100">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex justify-between items-center h-20">
+                        <!-- Logo -->
+                        <div onclick="app.goHome()" class="flex items-center cursor-pointer group">
+                            <img src="Untitled design.png" alt="DigiStore Logo" class="w-12 h-12 object-contain mr-2 transform group-hover:scale-105 transition-transform rounded-lg">
+                            <span class="text-2xl font-bold text-gray-900 tracking-tight">
+                                Digi<span class="text-[#FFD600]">Store</span>
+                            </span>
+                        </div>
+
+                        <!-- Search Bar (Desktop) -->
+                        <form onsubmit="app.handleSearch(event)" class="hidden md:flex flex-1 max-w-lg mx-8 relative">
+                            <input type="text" placeholder="Search for products, brands and more..." class="search-input w-full pl-5 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-[#FFD600] focus:border-transparent transition-all">
+                            <button type="submit" class="absolute right-2 top-1.5 p-1.5 bg-[#FFD600] rounded-full hover:bg-yellow-400 transition-colors">
+                                <i data-lucide="search" class="w-5 h-5 text-black"></i>
+                            </button>
+                        </form>
+
+                        <!-- Right Nav -->
+                        <div class="hidden md:flex items-center space-x-6">
+                            <button class="flex items-center text-gray-600 hover:text-black font-medium transition-colors">Orders</button>
+                            <button class="relative p-2 text-gray-600 hover:text-black transition-colors">
+                                <i data-lucide="shopping-cart" class="w-6 h-6"></i>
+                                ${state.cart.length > 0 ? `<span class="absolute top-0 right-0 bg-[#FFD600] text-black text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">${state.cart.length}</span>` : ''}
+                            </button>
+                        </div>
+
+                        <!-- Mobile Menu Button -->
+                        <button onclick="app.toggleMobileMenu()" class="md:hidden p-2 text-gray-600">
+                            <i data-lucide="${state.isMobileMenuOpen ? 'x' : 'menu'}"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Mobile Menu -->
+                ${state.isMobileMenuOpen ? `
+                <div class="md:hidden bg-white border-t border-gray-100 p-4 space-y-4">
+                    <form onsubmit="app.handleSearch(event)" class="relative">
+                        <input type="text" placeholder="Search..." class="search-input w-full pl-4 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#FFD600]">
+                        <i data-lucide="search" class="absolute right-3 top-2.5 w-5 h-5 text-gray-400"></i>
+                    </form>
+                    <button class="block w-full text-left py-2 font-medium">My Orders</button>
+                    <button class="block w-full text-left py-2 font-medium">Cart (${state.cart.length})</button>
+                </div>
+                ` : ''}
+            </header>
+        `;
+
+        const Footer = () => `
+            <footer class="bg-gray-900 text-white pt-12 pb-8 mt-auto">
+                <div class="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                    <div>
+                        <div class="flex items-center mb-4">
+                            <img src="Untitled design.png" alt="DigiStore Logo" class="w-10 h-10 object-contain mr-2 rounded-lg">
+                            <span class="text-xl font-bold">DigiStore</span>
+                        </div>
+                        <p class="text-gray-400 text-sm">The best digital marketplace for all your electronic needs.</p>
+                    </div>
+                    <div>
+                        <h3 class="font-bold mb-4 text-[#FFD600]">Shop</h3>
+                        <ul class="space-y-2 text-gray-400 text-sm">
+                            <li>Electronics</li>
+                            <li>Cameras</li>
+                            <li>Laptops</li>
+                            <li>Accessories</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-bold mb-4 text-[#FFD600]">Support</h3>
+                        <ul class="space-y-2 text-gray-400 text-sm">
+                            <li>Contact Us</li>
+                            <li>FAQ</li>
+                            <li>Returns</li>
+                            <li>Privacy Policy</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-bold mb-4 text-[#FFD600]">Newsletter</h3>
+                        <div class="flex">
+                            <input type="email" placeholder="Email" class="bg-gray-800 text-white px-4 py-2 rounded-l-md w-full focus:outline-none">
+                            <button class="bg-[#FFD600] text-black px-4 py-2 rounded-r-md font-bold">Go</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="border-t border-gray-800 pt-8 text-center text-gray-500 text-sm">
+                    &copy; 2024 DigiStore Inc. All rights reserved.
+                </div>
+            </footer>
+        `;
+
+        const ProductCard = (product) => `
+            <div onclick="app.viewProduct(${product.id})" class="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group cursor-pointer">
+                <div class="relative h-64 overflow-hidden bg-gray-100">
+                    <img src="${product.image}" alt="${product.name}" class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500">
+                    <div class="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-bold shadow-sm flex items-center">
+                        <i data-lucide="star" class="w-3 h-3 text-[#FFD600] fill-current mr-1"></i>
+                        ${product.rating}
+                    </div>
+                </div>
+                <div class="p-5">
+                    <div class="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">${product.category}</div>
+                    <h3 class="font-bold text-gray-900 text-lg mb-2 truncate">${product.name}</h3>
+                    <div class="flex items-center justify-between mt-4">
+                        <span class="text-xl font-bold text-gray-900">₹${formatPrice(product.price)}</span>
+                        <button class="text-[#FFD600] font-medium text-sm hover:underline">View Details</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const HomePage = () => {
+            const categories = [
+                { icon: 'smartphone', name: "Phones" },
+                { icon: 'headphones', name: "Audio" },
+                { icon: 'camera', name: "Photo" },
+                { icon: 'watch', name: "Wearables" }
+            ];
+
+            return `
+            <div class="animate-fade-in">
+                <!-- Hero Section -->
+                <div class="relative bg-[#FFD600] overflow-hidden">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28 relative z-10">
+                        <div class="max-w-2xl">
+                            <h1 class="text-5xl md:text-7xl font-extrabold text-black leading-tight mb-6">
+                                Next Gen <br/><span class="text-white">Tech Is Here.</span>
+                            </h1>
+                            <p class="text-xl text-black/80 font-medium mb-8 max-w-lg">
+                                Upgrade your lifestyle with the latest gadgets. Premium quality, best prices, delivered tomorrow.
+                            </p>
+                            <button onclick="app.scrollToFeatured()" class="bg-black text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-800 transition-colors shadow-lg flex items-center inline-flex">
+                                Shop Now <i data-lucide="chevron-right" class="ml-2 w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Decorative Circles -->
+                    <div class="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-white/20 rounded-full blur-3xl"></div>
+                    <div class="absolute bottom-0 right-40 w-72 h-72 bg-yellow-300/50 rounded-full blur-2xl"></div>
+                </div>
+
+                <!-- Categories Strip -->
+                <div class="bg-white py-10 border-b border-gray-100">
+                    <div class="max-w-7xl mx-auto px-4 flex justify-around flex-wrap gap-4 text-center">
+                        ${categories.map(cat => `
+                            <div class="flex flex-col items-center group cursor-pointer hover:text-[#FFD600] transition-colors">
+                                <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-2 group-hover:bg-gray-100 transition-colors">
+                                    <i data-lucide="${cat.icon}" class="w-8 h-8"></i>
+                                </div>
+                                <span class="font-semibold text-sm">${cat.name}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <!-- Featured Products -->
+                <div id="featured" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-8 flex items-center">
+                        <span class="w-2 h-8 bg-[#FFD600] mr-3 rounded-full"></span>
+                        Featured Products
+                    </h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                        ${PRODUCTS.map(product => ProductCard(product)).join('')}
+                    </div>
+                </div>
+            </div>
+            `;
+        };
+
+        const SearchPage = () => {
+            const results = PRODUCTS.filter(p => 
+                p.name.toLowerCase().includes(state.searchQuery.toLowerCase()) || 
+                p.category.toLowerCase().includes(state.searchQuery.toLowerCase())
+            );
+
+            return `
+            <div class="max-w-7xl mx-auto px-4 py-12 min-h-screen">
+                <div class="mb-8">
+                   <h2 class="text-2xl font-bold text-gray-900">
+                    Search Results for "<span class="text-[#FFD600]">${state.searchQuery}</span>"
+                  </h2>
+                  <p class="text-gray-500 mt-2">${results.length} items found</p>
+                </div>
+                
+                ${results.length > 0 ? `
+                  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                    ${results.map(product => ProductCard(product)).join('')}
+                  </div>
+                ` : `
+                  <div class="text-center py-20 bg-gray-50 rounded-xl">
+                    <div class="flex justify-center mb-4"><i data-lucide="search" class="w-16 h-16 text-gray-300"></i></div>
+                    <h3 class="text-xl font-bold text-gray-900">No matches found</h3>
+                    <p class="text-gray-500 mt-2">Try checking your spelling or use different keywords.</p>
+                    <button onclick="app.goHome()" class="mt-6 text-[#FFD600] font-bold hover:underline">Return Home</button>
+                  </div>
+                `}
+            </div>
+            `;
+        };
+
+        const ProductDetailsPage = () => {
+            const product = state.selectedProduct;
+            return `
+            <div class="max-w-7xl mx-auto px-4 py-12 min-h-screen">
+                <button onclick="app.goHome()" class="flex items-center text-gray-500 hover:text-black mb-8 transition-colors">
+                    <i data-lucide="arrow-left" class="w-5 h-5 mr-2"></i> Back to Shopping
+                </button>
+
+                <div class="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-0">
+                        <div class="bg-gray-50 p-8 md:p-16 flex items-center justify-center">
+                            <img src="${product.image}" alt="${product.name}" class="w-full max-w-md object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-500">
+                        </div>
+                        <div class="p-8 md:p-12 flex flex-col justify-center">
+                            <div class="inline-block bg-yellow-100 text-yellow-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide mb-4 w-fit">
+                                ${product.category}
+                            </div>
+                            <h1 class="text-4xl font-extrabold text-gray-900 mb-4">${product.name}</h1>
+                            <div class="flex items-center mb-6">
+                                <div class="flex text-[#FFD600]">
+                                    ${[...Array(5)].map((_, i) => `<i data-lucide="star" class="w-5 h-5 ${i < Math.floor(product.rating) ? 'fill-current' : 'text-gray-300'}"></i>`).join('')}
+                                </div>
+                                <span class="ml-2 text-gray-500 font-medium">(${product.rating} Rating)</span>
+                            </div>
+                            <p class="text-gray-600 text-lg mb-8 leading-relaxed">
+                                ${product.description}
+                            </p>
+                            <div class="text-4xl font-bold text-gray-900 mb-8">
+                                ₹${formatPrice(product.price)}
+                            </div>
+                            <div class="flex flex-col sm:flex-row gap-4">
+                                <button onclick="app.addToCart(${product.id})" class="flex-1 px-8 py-4 border-2 border-gray-900 text-gray-900 font-bold rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center">
+                                    <i data-lucide="shopping-cart" class="w-5 h-5 mr-2"></i> Add to Cart
+                                </button>
+                                <button onclick="app.proceedToBuy(${product.id})" class="flex-1 px-8 py-4 bg-[#FFD600] text-black font-bold rounded-xl hover:bg-yellow-400 transition-all transform hover:-translate-y-1 shadow-md flex items-center justify-center">
+                                    Place Order <i data-lucide="chevron-right" class="w-5 h-5 ml-2"></i>
+                                </button>
+                            </div>
+                            <div class="mt-8 pt-8 border-t border-gray-100 grid grid-cols-2 gap-4">
+                                <div class="flex items-center text-sm text-gray-500">
+                                    <i data-lucide="truck" class="w-5 h-5 mr-2 text-[#FFD600]"></i> Free Delivery
+                                </div>
+                                <div class="flex items-center text-sm text-gray-500">
+                                    <i data-lucide="shield-check" class="w-5 h-5 mr-2 text-[#FFD600]"></i> 2 Year Warranty
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            `;
+        };
+
+        const PaymentPage = () => {
+            const product = state.selectedProduct;
+            const tax = Math.round(product.price * 0.08);
+            const total = Math.round(product.price + tax);
+
+            const options = [
+                { id: 'card', label: 'Credit / Debit Card', icon: 'credit-card' },
+                { id: 'netbanking', label: 'Net Banking', icon: 'banknote' },
+                { id: 'cod', label: 'Pay on Delivery', icon: 'truck' }
+            ];
+
+            return `
+            <div class="max-w-4xl mx-auto px-4 py-12 min-h-screen">
+                <div class="text-center mb-12">
+                    <h1 class="text-3xl font-bold text-gray-900">Checkout</h1>
+                    <p class="text-gray-500 mt-2">Complete your purchase securely</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- Order Summary Column -->
+                    <div class="md:col-span-1 order-2 md:order-1">
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 sticky top-24">
+                            <h3 class="font-bold text-gray-900 mb-4">Order Summary</h3>
+                            <div class="flex items-start mb-4 pb-4 border-b border-gray-100">
+                                <img src="${product.image}" class="w-16 h-16 object-cover rounded-md bg-gray-50" alt="product">
+                                <div class="ml-3">
+                                    <p class="text-sm font-bold text-gray-900 line-clamp-2">${product.name}</p>
+                                    <p class="text-sm text-gray-500">₹${formatPrice(product.price)}</p>
+                                </div>
+                            </div>
+                            <div class="space-y-2 mb-4">
+                                <div class="flex justify-between text-sm text-gray-600">
+                                    <span>Subtotal</span>
+                                    <span>₹${formatPrice(product.price)}</span>
+                                </div>
+                                <div class="flex justify-between text-sm text-gray-600">
+                                    <span>Shipping</span>
+                                    <span class="text-green-600 font-medium">Free</span>
+                                </div>
+                                <div class="flex justify-between text-sm text-gray-600">
+                                    <span>Tax (Est.)</span>
+                                    <span>₹${formatPrice(tax)}</span>
+                                </div>
+                            </div>
+                            <div class="border-t border-dashed border-gray-200 pt-4 flex justify-between items-center">
+                                <span class="font-bold text-gray-900">Total</span>
+                                <span class="font-bold text-xl text-[#FFD600]">₹${formatPrice(total)}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Options Column -->
+                    <div class="md:col-span-2 order-1 md:order-2">
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-6">
+                            <h3 class="font-bold text-lg text-gray-900 mb-6 flex items-center">
+                                <div class="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-sm mr-3">1</div>
+                                Select Payment Method
+                            </h3>
+                            
+                            <div class="space-y-4">
+                                ${options.map(option => `
+                                    <label onclick="app.selectPaymentMethod('${option.id}')" class="flex items-center p-5 border-2 rounded-xl cursor-pointer transition-all ${state.paymentMethod === option.id ? 'border-[#FFD600] bg-yellow-50' : 'border-gray-100 hover:border-gray-200'}">
+                                        <div class="w-5 h-5 rounded-full border border-gray-300 flex items-center justify-center ${state.paymentMethod === option.id ? 'border-[#FFD600]' : ''}">
+                                            ${state.paymentMethod === option.id ? '<div class="w-3 h-3 bg-[#FFD600] rounded-full"></div>' : ''}
+                                        </div>
+                                        <div class="ml-4 p-2 rounded-lg ${state.paymentMethod === option.id ? 'bg-[#FFD600] text-black' : 'bg-gray-100 text-gray-500'}">
+                                            <i data-lucide="${option.icon}" class="w-6 h-6"></i>
+                                        </div>
+                                        <span class="ml-4 font-medium ${state.paymentMethod === option.id ? 'text-black' : 'text-gray-600'}">
+                                            ${option.label}
+                                        </span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-center">
+                             <button onclick="app.goBack()" class="text-gray-500 hover:text-black font-medium">Cancel</button>
+                             <button 
+                                onclick="app.confirmOrder()"
+                                class="px-8 py-4 rounded-xl font-bold flex items-center shadow-lg transition-all ${state.paymentMethod ? 'bg-[#FFD600] text-black hover:bg-yellow-400 hover:scale-105' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}"
+                            >
+                                Confirm Order <i data-lucide="check-circle" class="ml-2 w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            `;
+        };
+
+        const OrdersPage = () => {
+            const lastOrder = state.lastOrder;
+            if(!lastOrder) return '';
+
+            return `
+            <div class="max-w-3xl mx-auto px-4 py-20 min-h-screen text-center animate-fade-in">
+                <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-8">
+                    <i data-lucide="check-circle" class="w-12 h-12 text-green-500"></i>
+                </div>
+                <h1 class="text-4xl font-extrabold text-gray-900 mb-4">Order Confirmed!</h1>
+                <p class="text-gray-500 text-lg mb-12">Thank you for shopping with DigiStore. Your order has been placed successfully.</p>
+
+                <div class="bg-white p-8 rounded-3xl shadow-lg border border-gray-100 text-left max-w-lg mx-auto relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-2 bg-[#FFD600]"></div>
+                    
+                    <div class="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+                         <div>
+                           <p class="text-xs text-gray-400 uppercase tracking-wide">Order ID</p>
+                           <p class="font-mono font-bold text-gray-900">${lastOrder.orderId}</p>
+                         </div>
+                         <div class="text-right">
+                            <p class="text-xs text-gray-400 uppercase tracking-wide">Date</p>
+                            <p class="font-medium text-gray-900">${lastOrder.date}</p>
+                         </div>
+                    </div>
+
+                    <div class="flex items-center mb-8">
+                        <img src="${lastOrder.product.image}" class="w-20 h-20 object-cover rounded-lg bg-gray-50 border border-gray-100" alt="product">
+                        <div class="ml-4">
+                            <h3 class="font-bold text-lg text-gray-900">${lastOrder.product.name}</h3>
+                            <p class="text-[#FFD600] font-bold">₹${formatPrice(lastOrder.product.price)}</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3 bg-gray-50 p-4 rounded-xl mb-8">
+                         <div class="flex items-center text-sm text-gray-600">
+                           <i data-lucide="credit-card" class="w-4 h-4 mr-3"></i>
+                           Payment Method: <span class="font-semibold ml-1 capitalize">${lastOrder.method}</span>
+                         </div>
+                         <div class="flex items-center text-sm text-gray-600">
+                           <i data-lucide="map-pin" class="w-4 h-4 mr-3"></i>
+                           Shipping to: <span class="font-semibold ml-1">123 Tech Street, Digital City</span>
+                         </div>
+                    </div>
+
+                    <button onclick="app.goHome()" class="w-full py-4 bg-black text-white font-bold rounded-xl hover:bg-gray-800 transition-colors">
+                        Continue Shopping
+                    </button>
+                </div>
+            </div>
+            `;
+        };
+
+        // --- INIT ---
+        window.addEventListener('DOMContentLoaded', () => {
+            render();
+        });
+
+    </script>
+</body>
+</html>
